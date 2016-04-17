@@ -6,7 +6,7 @@ rm -rf out || exit 0;
 mkdir out;
 
 # run our compile script, discussed above
-NODE_ENV=production npm run build
+NODE_ENV=production gulp build
 cp CNAME dist/
 # go to the out directory and create a *new* Git repo
 cd dist
