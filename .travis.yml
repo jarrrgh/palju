@@ -1,0 +1,11 @@
+script: bash ./deploy.sh
+language: node_js
+node_js:
+  - "5.10.1"
+branches:
+  only:
+    - master
+env:
+  global:
+  - GH_REF: github.com/jarrrgh/palju-demo.git
+
