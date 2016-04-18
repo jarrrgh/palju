@@ -11,6 +11,12 @@ $(function() {
       labelInterpolationFnc: function(value, index) {
         return index % 10 === 0 ? getLabel(value) : null;
       }
+    },
+    axisY: {
+      offset: 100,
+      labelInterpolationFnc: function(value, index) {
+        return formatTemp(value);
+      }
     }
   };
 
@@ -19,13 +25,21 @@ $(function() {
   }
   
   var responsiveOptions = [
+    /*
     ['screen and (min-width: 640px)', {
       axisX: {
         labelInterpolationFnc: function(value, index) {
           return index % 10 === 0 ? getLabel(value) : null;
         }
+      },
+      axisY: {
+        offset: 100,
+        labelInterpolationFnc: function(value, index) {
+          return value + '&nbsp;&deg;C';
+        }
       }
     }]
+    */
   ];
 
   var data = {};
@@ -60,7 +74,8 @@ $(function() {
           var delta = temp - previousTemp;
           
           // Dampen the temperature change, since the sensor data has the tendency to jitter
-          return Math.round((previousTemp + 0.2 * delta) * 100) / 100;
+          return previousTemp + 0.2 * delta;
+          //return Math.round((previousTemp + 0.2 * delta) * 100) / 100;
         }));
         
         if (chart == null) {
@@ -73,6 +88,11 @@ $(function() {
     }).fail(function() {
       console.log("Referesh failed.");
     });
+  }
+  
+  function formatTemp(value) {
+    // Dampen the temperature change, since the sensor data has the tendency to jitter
+    return (Math.round(value * 10) / 10) + '&nbsp;&deg;C';
   }
   
   function toLocalDate (timestamp) {

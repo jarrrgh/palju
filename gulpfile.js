@@ -70,10 +70,6 @@ gulp.task('fonts', function() {
     .pipe(gulp.dest('dist/fonts'))
 })
 
-del(['dist/*.js']).then(function(paths) {
-    cb(paths);
-});
-
 // Clean caches
 gulp.task('clean:cache', function (callback) {
 return cache.clearAll(callback)

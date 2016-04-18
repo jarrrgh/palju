@@ -4,6 +4,10 @@ body {
   font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
   text-align: center; }
 
+.chart {
+  width: 50%;
+  margin: auto; }
+
 /*
  * Chartist
  */
