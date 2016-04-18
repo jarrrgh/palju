@@ -1,0 +1,13 @@
+body {
+  background-color: #1ba6be;
+  color: white;
+  font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+  text-align: center;
+}
+
+/*
+ * Chartist
+ */
+
+@import "_chartist-settings";
+@import "../../node_modules/chartist/dist/scss/chartist.scss";

@@ -70,11 +70,13 @@ gulp.task('fonts', function() {
     .pipe(gulp.dest('dist/fonts'))
 })
 
-// Clean dist and caches
-gulp.task('clean', function() {
-  return del.sync('dist').then(function(cb) {
-    return cache.clearAll(cb);
-  });
+del(['dist/*.js']).then(function(paths) {
+    cb(paths);
+});
+
+// Clean caches
+gulp.task('clean:cache', function (callback) {
+return cache.clearAll(callback)
 })
 
 // Clean dist, but leave the images
