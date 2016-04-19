@@ -13,7 +13,7 @@ $(function() {
       }
     },
     axisY: {
-      offset: 100,
+      offset: 60,
       labelInterpolationFnc: function(value, index) {
         return formatTemp(value);
       }
@@ -92,7 +92,8 @@ $(function() {
   
   function formatTemp(value) {
     // Dampen the temperature change, since the sensor data has the tendency to jitter
-    return (Math.round(value * 10) / 10) + '&nbsp;&deg;C';
+    return value + '&nbsp;&deg;C';
+    //return (Math.round(value * 10) / 10) + '&nbsp;&deg;C';
   }
   
   function toLocalDate (timestamp) {
