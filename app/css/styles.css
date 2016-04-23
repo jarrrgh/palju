@@ -25,6 +25,19 @@ body {
   display: flex;
   width: 100%; }
 
+/*
+.rim {
+  fill:url(#spectrum);
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, .5), -1px -1px 0px rgba(0, 0, 0, 0.3), 1px 1px 1px rgba(255, 255, 255, 0.4);
+}
+.button {
+  fill:url(#emboss);
+  box-shadow: inset 0 2px 2px rgba(255, 255, 255, .4), 0 3px 13px rgba(0, 0, 0, .85);
+}
+.dent {
+  fill:url(#impress);
+}
+*/
 /**
  * CSS3 Thermometer
  */
@@ -44,7 +57,6 @@ body {
   padding: 15px;
   box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5), -1px -1px 0px rgba(0, 0, 0, 0.3), 1px 1px 1px rgba(255, 255, 255, 0.4);
   background: #df3341;
-  /*background: linear-gradient(to left, #df3341 0%, #fe9804 25%, #d4f355 66%,#1ba6be 100%);*/
   background: -webkit-linear-gradient(right, #fe9804 0%, #d4f355 50%, #1ba6be 100%);
   background: linear-gradient(to left, #fe9804 0%, #d4f355 50%, #1ba6be 100%); }
 
