@@ -9,16 +9,20 @@ $(function() {
       return 'rgb('+this.r+','+this.g+','+this.b+')';
   };
 
+  // Color is immutable
+  Object.freeze(Color);
+  
   var spectrum = [
-    new Color(27, 166, 190), // #1ba6be;
-    new Color(29, 188, 130), // #1dbc82;
-    new Color(212, 243, 85), // #d4f355;
-    new Color(254, 152, 4), // #fe9804;
-    new Color(223, 51, 65) // #1ba6be;
+    {offset: 0, color: new Color(53, 203, 229)}, // #35cbe5 25.5°C
+    {offset: 0.5, color: new Color(64, 203, 156)}, // #40cb9c 33°C
+    {offset: 0.7, color: new Color(124, 202, 87)}, // #7cca57 36°C
+    {offset: 0.8, color: new Color(212, 243, 85)}, // #d4f355 37.5°C
+    {offset: 0.9, color: new Color(254, 152, 4)}, // #fe9804 39°C
+    {offset: 1, color: new Color(223, 51, 65)} // #df3341 40.5°C
   ];
 
-  var minColorTemp = 20.0;
-  var maxColorTemp = 42.0;
+  var minColorTemp = 25.5;
+  var maxColorTemp = 40.5;
 
   var optimalTemp = 36.5;
   var currentTemp = 0.0;
@@ -62,14 +66,22 @@ $(function() {
     // Ensure range from 0 to 1
     value = Math.max(Math.min(value, 1), 0);
     
-    var spectrumValue = value * spectrum.length;
-    var stopModulus = spectrumValue % 1;
-    var prevColor = spectrum[Math.floor(spectrumValue)];
-    var nextColor = spectrum[Math.ceil(spectrumValue)];
+    var prevStop = spectrum.findLastOrDefault(function(obj) {
+      return obj.offset <= value;
+    }, spectrum[0]);
     
-    return interpolateColor(prevColor, nextColor, stopModulus);
+    var nextStop = spectrum.findFirstOrDefault(function(obj) {
+      return obj.offset >= value;
+    }, spectrum[spectrum.length - 1]);
+    
+    if (nextStop.offset === prevStop.offset) {
+      return prevStop.color;
+    } else {
+      var colorOffset = (value - prevStop.offset) / (nextStop.offset - prevStop.offset);
+      return interpolateColor(prevStop.color, nextStop.color, colorOffset);
+    }
   };
-
+  
   var updateCurrentTemp = function(newTemp) {
     var gradient = document.getElementById('gradient');
     updateTempGradient(gradient, currentTemp, newTemp);
@@ -89,13 +101,14 @@ $(function() {
       });
     }
   };
-  
-  var lolTemp = 19.0;
+  /*
+  var lolTemp = 25.0;
   setInterval(function() {
+    console.log(lolTemp);
     updateCurrentTemp(lolTemp);
     lolTemp += 2.0;
   }, 5000);
-  
+  */
   var options = {
     showLine: true,
     axisX: {
@@ -305,5 +318,21 @@ $(function() {
         seq++;
       }
     });
+  };
+  
+  Array.prototype.findFirstOrDefault = function (predicateCallback, defaultValue) {
+    for (var i = 0; i < this.length; i++) {
+        if (i in this && predicateCallback(this[i])) return this[i];
+    }
+
+    return defaultValue;
+  };
+  
+  Array.prototype.findLastOrDefault = function (predicateCallback, defaultValue) {
+    for (var i = this.length - 1; i >= 0; i--) {
+        if (i in this && predicateCallback(this[i])) return this[i];
+    }
+    
+    return defaultValue;
   };
 });
