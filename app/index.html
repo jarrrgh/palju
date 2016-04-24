@@ -26,51 +26,52 @@
     <h1>Welcome to the Internet of Paljus!</h1>
     
     <div class="dashboard">
+      
       <div class="chart">
-      <div class="ct-chart ct-minor-seventh"></div>
-      <svg>
-        <defs>
-          <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%"/>
-            <stop offset="50%"/>
-            <stop offset="100%"/>
-          </linearGradient>
-        </defs>
-      </svg>
-    </div>
+        <div class="ct-chart ct-minor-seventh"></div>
+      </div>
       
       <div class="displays">
-        <div class="rim">
-          <div class="inset">
-            <div class="emboss">
-              <div class="dent">
-                <div class="content">
-                    <div id="temperature">
-                      --
-                    </div>
-                    <div id="temperature-label" class="label">L&auml;mp&ouml;tila</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="rim">
-          <div class="inset">
-            <div class="emboss">
-              <div class="dent">
-                <div class="content">
-                  <div id="estimate">
+        
+        <div id="temperature-display" class="display">
+          <div class="emboss">
+            <div class="dent">
+              <div class="content">
+                  <div id="temperature-value">
                     --
                   </div>
-                  <div id="estimate-label" class="label">Kylpyvalmis</div>
-                </div>
+                  <div id="temperature-label" class="label">L&auml;mp&ouml;tila</div>
               </div>
             </div>
           </div>
         </div>
+        
+        <div id="estimate-display" class="display">
+          <div class="emboss">
+            <div class="dent">
+              <div class="content">
+                <div id="estimate-value">
+                  --
+                </div>
+                <div id="estimate-label" class="label">Kylpyvalmis</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
       </div>
+      
     </div>
+    
+    <svg>
+      <defs>
+        <linearGradient id="line-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"/>
+          <stop offset="50%"/>
+          <stop offset="100%"/>
+        </linearGradient>
+      </defs>
+    </svg>
     
   </body>
 </html>

@@ -92,7 +92,7 @@ $(function() {
   };
   
   var updateCurrentTemp = function(samples) {
-    var tempElement = document.getElementById('temperature');
+    var tempElement = document.getElementById('temperature-value');
     var avgTemp;
     
     if (samples.length >= sampleCountForAvg) {
@@ -100,8 +100,8 @@ $(function() {
       avgTemp = samplesForAvg.reduce(function(sum, sample) { return sum + sample.temp; }, 0) / sampleCountForAvg;
 
       if (avgTemp) {
-        var gradient = document.getElementById('gradient');
-        updateTempGradient(gradient, currentTemp, avgTemp);
+        updateTemperatureDisplayGradient(currentTemp, avgTemp);
+        updateChartLineGradient(samples);
         currentTemp = avgTemp;  
       }
     }
@@ -110,7 +110,7 @@ $(function() {
   }
   
   var updateCurrentEstimate = function(inSamples, outSamples) {
-    var timeElement = document.getElementById('estimate');
+    var timeElement = document.getElementById('estimate-value');
     var estimateMin;
     
     if (inSamples.length >= sampleCountForEstimate) {
@@ -201,21 +201,47 @@ $(function() {
     }
   }
   
-  var updateTempGradient = function(gradientElement, fromTemp, toTemp) {
+  var updateTemperatureDisplayGradient = function(fromTemp, toTemp) {
+    var display = document.getElementById('temperature-display');
+    
     if(!fromTemp) {
       fromTemp = 0.0;
     }
-    var stops = gradientElement.getElementsByTagName('stop');
 
-    for (var i = 0; i < stops.length; i++) {
-      var fromColor = getStopColor(fromTemp, i);
-      var toColor = getStopColor(toTemp, i);
-
-      animateStyleProperty(stops[i], 'stop-color', fromColor, toColor, 2000, function(from, to, progress) {
-        var color = interpolateColor(from, to, progress);
-        return color.toRGBString();
-      });
+    var fromColors = [];
+    var toColors = [];
+    
+    for (var i = 0; i < 3; i++) {
+      fromColors.push(getStopColor(fromTemp, i));
+      toColors.push(getStopColor(toTemp, i));
     }
+    
+    console.log('fromColors', fromColors);
+    console.log('toColors', toColors);
+    
+    animateStyleProperty(display, 'background', fromColors, toColors, 2000, function(from, to, progress) {
+      var colors = []
+      for (var i = 0; i < 3; i++) {
+        var color = interpolateColor(from[i], to[i], progress);
+        colors.push(color.toRGBString());
+      }
+      console.log('progress',progress);
+      return 'linear-gradient(to left, ' + colors[0] + ' 0%, ' + colors[1] + ' 50%, ' + colors[2] + ' 100%)';
+    });
+  };
+  
+  var updateChartLineGradient = function(samples) {
+    var gradientElement = document.getElementById('line-gradient');
+    
+    var temps = samples.map(function(sample) {return sample.temp});
+    var lowestTemp = temps.min();
+    var highestTemp = temps.max();
+    var midTemp = (lowestTemp + highestTemp) / 2;
+    
+    var stops = gradientElement.getElementsByTagName('stop');
+    stops[0].style.setProperty('stop-color', getStopColor(highestTemp, 0).toRGBString());
+    stops[1].style.setProperty('stop-color', getStopColor(midTemp, 0).toRGBString());
+    stops[2].style.setProperty('stop-color', getStopColor(lowestTemp, 0).toRGBString());
   };
   
   var options = {
@@ -274,9 +300,7 @@ $(function() {
     $.get(endpointUrl, { 'gte[timestamp]': timeWindow }, function(samples) {
       if (samples instanceof Array && samples.length >= 4) {
         //samples = samples.filter(function(value, index) {return index % 4 === 0;});
-        samples = samples.map(function(sample) {
-          return convertSample(sample);
-        });
+        samples = samples.map(function(sample) {return convertSample(sample);});
         samples.reverse();
         
         var inSamples = samples.filter(function(sample) {return sample.id === inTempSensorId});
@@ -429,6 +453,14 @@ $(function() {
         seq++;
       }
     });
+  };
+  
+  Array.prototype.max = function() {
+    return Math.max.apply(null, this);
+  };
+
+  Array.prototype.min = function() {
+    return Math.min.apply(null, this);
   };
   
   Array.prototype.findFirstOrDefault = function (predicateCallback, defaultValue) {
