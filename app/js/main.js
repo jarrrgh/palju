@@ -12,6 +12,8 @@ $(function() {
   // Color is immutable
   Object.freeze(Color);
   
+  var defaultColor = new Color(27, 166, 190);
+  
   var spectrum = [
     {offset: 0, color: new Color(53, 203, 229)}, // #35cbe5 30 °C
     {offset: 0.5, color: new Color(64, 203, 156)}, // #40cb9c 35 °C
@@ -101,6 +103,7 @@ $(function() {
 
       if (avgTemp) {
         updateTemperatureDisplayGradient(currentTemp, avgTemp);
+        updateEstimateDisplayGradient(currentTemp, avgTemp);
         updateChartLineGradient(samples);
         currentTemp = avgTemp;  
       }
@@ -122,8 +125,6 @@ $(function() {
       var estimateMs = lineResult.fn(optimalTemp);
 
       estimateMin = estimateMs - (Date.now() / 1000 / 60);
-    } else {
-      estimateMin = maxEsimate;
     }
     
     timeElement.innerHTML = formatTimeEstimateHtml(estimateMin);
@@ -176,19 +177,16 @@ $(function() {
     } else if (minutes) {
       console.log ('minutes2', minutes);
       if (minutes > 60) {
-        var hours = minutes / 60.0;
+        var hours = Math.min(minutes, maxEsimate) / 60.0;
+        
         var integer = parseInt(hours); // Get the integer part as is
         var decimal = Math.round(hours % 1 * 10); // Round decimal part to the nearest one digit
 
         if (minutes > maxEsimate) {
-          return  hours + '<span>h</span>'
+          return  '>' + integer + '<span>h</span>'
         }
-        
-        console.log ('hours', integer);
-        console.log ('dec', decimal);
         return integer + '.' + decimal + '<span>h</span>'
-      } else if (minutes > 5) {
-        console.log ('actual minutes >5, <= 60', minutes);
+      } else if (minutes > 0) {
         return  parseInt(minutes) + '<span>min</span>'
       } else {
         return '--';
@@ -200,20 +198,7 @@ $(function() {
   
   var updateTemperatureDisplayGradient = function(fromTemp, toTemp) {
     var display = document.getElementById('temperature-display');
-    
-    if(!fromTemp) {
-      fromTemp = 0.0;
-    }
-
-    var fromColors = [];
-    var toColors = [];
-    
-    for (var i = 0; i < 3; i++) {
-      fromColors.push(getStopColor(fromTemp, i));
-      toColors.push(getStopColor(toTemp, i));
-    }
-    
-    animateStyleProperty(display, 'background', fromColors, toColors, 2000, function(from, to, progress) {
+    updateDisplayGradient(display, fromTemp, toTemp, function(from, to, progress) {
       var colors = []
       for (var i = 0; i < 3; i++) {
         var color = interpolateColor(from[i], to[i], progress);
@@ -221,6 +206,30 @@ $(function() {
       }
       return 'linear-gradient(to left, ' + colors[0] + ' 0%, ' + colors[1] + ' 50%, ' + colors[2] + ' 100%)';
     });
+  }
+  
+  var updateEstimateDisplayGradient = function(fromTemp, toTemp) {
+    var display = document.getElementById('estimate-display');
+    updateDisplayGradient(display, fromTemp, toTemp, function(from, to, progress) {
+      var colors = []
+      for (var i = 0; i < 3; i++) {
+        var color = interpolateColor(from[i], to[i], progress);
+        colors.push(color.toRGBString());
+      }
+      return 'linear-gradient(to left, ' + colors[0] + ' 0%, ' + colors[1] + ' 50%, ' + colors[2] + ' 100%)';
+    });
+  }
+  
+  var updateDisplayGradient = function(display, fromTemp, toTemp, callback) {
+    var fromColors = [];
+    var toColors = [];
+    
+    for (var i = 0; i < 3; i++) {
+      fromColors.push(!fromTemp ? defaultColor : getStopColor(fromTemp, i));
+      toColors.push(!toTemp ? defaultColor : getStopColor(toTemp, i));
+    }
+    
+    animateStyleProperty(display, 'background', fromColors, toColors, 2000, callback);
   };
   
   var updateChartLineGradient = function(samples) {
@@ -242,20 +251,33 @@ $(function() {
   var options = {
     showLine: true,
     axisX: {
-      labelInterpolationFnc: function(value, index) {
-        return index % 10 === 0 ? formatTimeLabel(value) : null;
+      offset: 60,
+      labelInterpolationFnc: function(value, index, labels) {
+        return formatTimeLabel(value, index, labels);
       }
     },
     axisY: {
       offset: 60,
-      labelInterpolationFnc: function(value, index) {
-        return formatTempLabel(value);
+      labelInterpolationFnc: function(value, index, labels) {
+        return formatTempLabel(value, index, labels);
       }
     }
   };
 
-  var formatTimeLabel = function(value) {
-    return moment(value).format('LT'); 
+  var formatTimeLabel = function(value, index, labels) {
+    var current = moment(value);
+    if (index > 0) {
+      var previous = moment(labels[index - 1]);
+
+      if (previous.hours() < current.hours()) {
+        return moment(current.hours() + '00', "hmm").format("HH:mm");
+      } else if (previous.minutes() < 30 && current.minutes() >= 30) {
+        return moment(current.hours() + '30', "hmm").format("HH:mm");
+      } else if (previous.date() != current.date()) {
+        return current.format('dddd');
+      }
+    }
+    return null;
   }
 
   function formatTempLabel(value) {
@@ -304,22 +326,15 @@ $(function() {
         inSamples = inSamples.filter(function(sample, index) {return index % 2 === 0;});
         outSamples = outSamples.filter(function(sample, index) {return index % 2 === 0;});
         
-        console.log('in n ',inSamples.length);
-        console.log('out n ',inSamples.length);
-        
         updateCurrentTemp(inSamples);
         updateCurrentEstimate(inSamples, outSamples);
 
-        data.labels = inSamples.map(function(sample) {
-          return sample.time;
-        });
+        data.labels = inSamples.map(function(sample) {return sample.time;});
 
         data.series = [];
-        data.series.push(inSamples.map(function(sample) {
-          return sample.temp;
-        }));
+        data.series.push(inSamples.map(function(sample) {return sample.temp;}));
 
-        if (chart == null) {
+        if (!chart) {
           initChart();
         } else {
           chart.data = data;
