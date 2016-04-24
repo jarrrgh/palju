@@ -13,20 +13,29 @@ $(function() {
   Object.freeze(Color);
   
   var spectrum = [
-    {offset: 0, color: new Color(53, 203, 229)}, // #35cbe5 25.5°C
-    {offset: 0.5, color: new Color(64, 203, 156)}, // #40cb9c 33°C
-    {offset: 0.7, color: new Color(124, 202, 87)}, // #7cca57 36°C
-    {offset: 0.8, color: new Color(212, 243, 85)}, // #d4f355 37.5°C
-    {offset: 0.9, color: new Color(254, 152, 4)}, // #fe9804 39°C
-    {offset: 1, color: new Color(223, 51, 65)} // #df3341 40.5°C
+    {offset: 0, color: new Color(53, 203, 229)}, // #35cbe5 25.5 °C
+    {offset: 0.5, color: new Color(64, 203, 156)}, // #40cb9c 33 °C
+    {offset: 0.7, color: new Color(124, 202, 87)}, // #7cca57 36 °C
+    {offset: 0.8, color: new Color(212, 243, 85)}, // #d4f355 37.5 °C
+    {offset: 0.9, color: new Color(254, 152, 4)}, // #fe9804 39 °C
+    {offset: 1, color: new Color(223, 51, 65)} // #df3341 40.5 °C
   ];
 
-  var minColorTemp = 25.5;
-  var maxColorTemp = 40.5;
+  var minColorTemp = 25.5; // °C
+  var maxColorTemp = 40.5; // °C
 
-  var optimalTemp = 36.5;
-  var currentTemp = 0.0;
-
+  var currentTemp;
+  var optimalTemp = 36.5; // °C
+  
+  var maxEsimate = 7 * 60; // min
+  var currentEstimate;
+  
+  var sampleCountForAvg = 3;
+  var sampleCountForEstimate = 3;
+  
+  var inTempSensorId = "0000068a3594";
+  var outTempSensorId = "0000066eff45";
+  
   var timeWindow = 'now -2 hour';
   var endpointUrl = 'https://data.sparkfun.com/output/OG62ZDJ65VC3x9jmWbK0.json';
 
@@ -82,52 +91,156 @@ $(function() {
     }
   };
   
-  var updateCurrentTemp = function(newTemp) {
-    var gradient = document.getElementById('gradient');
-    updateTempGradient(gradient, currentTemp, newTemp);
-    currentTemp = newTemp;
+  var updateCurrentTemp = function(samples) {
+    var tempElement = document.getElementById('temperature');
+    var avgTemp;
+    
+    if (samples.length >= sampleCountForAvg) {
+      var samplesForAvg = samples.slice(-sampleCountForAvg);
+      avgTemp = samplesForAvg.reduce(function(sum, sample) { return sum + sample.temp; }, 0) / sampleCountForAvg;
+
+      if (avgTemp) {
+        var gradient = document.getElementById('gradient');
+        updateTempGradient(gradient, currentTemp, avgTemp);
+        currentTemp = avgTemp;  
+      }
+    }
+    
+    tempElement.innerHTML = formatTemperatureHtml(avgTemp);
+  }
+  
+  var updateCurrentEstimate = function(inSamples, outSamples) {
+    var timeElement = document.getElementById('estimate');
+    var estimateMin;
+    
+    if (inSamples.length >= sampleCountForEstimate) {
+      // Note we flip the x-axis and y-axis for linear regression
+      var xSamples = inSamples.map(function(sample) { console.log('sample.time',sample.time); return sample.temp;});
+      var ySamples = inSamples.map(function(sample) { return sample.time / 1000 / 60;});
+
+      var lineResult = linearRegression(xSamples, ySamples);
+      var estimateMs = lineResult.fn(optimalTemp);
+
+      console.log('estimateMs', estimateMs);
+      estimateMin = estimateMs - (Date.now() / 1000 / 60);
+    } else {
+      estimateMin = maxEsimate;
+    }
+    
+    console.log('time estimate in min ' + estimateMin)
+    
+    timeElement.innerHTML = formatTimeEstimateHtml(estimateMin);
+  }
+  
+  // http://trentrichardson.com/2010/04/06/compute-linear-regressions-in-javascript/
+  function linearRegression(x, y){
+    var lr = {};
+    var n = y.length;
+    var sum_x = 0;
+    var sum_y = 0;
+    var sum_xy = 0;
+    var sum_xx = 0;
+    var sum_yy = 0;
+
+    for (var i = 0; i < y.length; i++) {
+        sum_x += x[i];
+        sum_y += y[i];
+        sum_xy += (x[i] * y[i]);
+        sum_xx += (x[i] * x[i]);
+        sum_yy += (y[i] * y[i]);
+    } 
+
+    lr['slope'] = (n * sum_xy - sum_x * sum_y) / (n * sum_xx - sum_x * sum_x);
+    lr['intercept'] = (sum_y - lr.slope * sum_x)/n;
+    lr['r2'] = Math.pow((n * sum_xy - sum_x * sum_y) /
+              Math.sqrt((n * sum_xx - sum_x * sum_x) *
+                        (n * sum_yy - sum_y * sum_y)),2);
+    lr['fn'] = function (x) { return this.slope * x + this.intercept; };
+
+    return lr;
+  }
+  
+  var formatTemperatureHtml = function(temp) {
+    if (temp) {
+      var integer = parseInt(temp); // Get the integer part as is
+      var decimal = Math.round(temp % 1 * 10); // Round decimal part to the nearest one digit
+
+      return integer+'<span>.'+decimal+'</span><strong>&deg;</strong>';
+    } else {
+      return '--';
+    }
+  }
+  
+  var formatTimeEstimateHtml = function(minutes) {
+    console.log ('minutes', minutes);
+    // TODO: move messages 'Paljuun!', 'Pökkyä!' ja 'Poppaa!' to another place
+    if (currentTemp > 35.5) {
+      return  'Nyt!'
+    } else if (minutes) {
+      console.log ('minutes2', minutes);
+      if (minutes > 60) {
+        var hours = minutes / 60.0;
+        var integer = parseInt(hours); // Get the integer part as is
+        var decimal = Math.round(hours % 1 * 10); // Round decimal part to the nearest one digit
+
+        if (minutes > maxEsimate) {
+          return  hours + '<span>h</span>'
+        }
+        
+        console.log ('hours', integer);
+        console.log ('dec', decimal);
+        return integer + '.' + decimal + '<span>h</span>'
+      } else if (minutes > 5) {
+        console.log ('actual minutes >5, <= 60', minutes);
+        return  parseInt(minutes) + '<span>min</span>'
+      } else {
+        return '--';
+      }
+    } else if (minutes > 5) {
+      return  '--';
+    }
   }
   
   var updateTempGradient = function(gradientElement, fromTemp, toTemp) {
+    if(!fromTemp) {
+      fromTemp = 0.0;
+    }
     var stops = gradientElement.getElementsByTagName('stop');
-    
+
     for (var i = 0; i < stops.length; i++) {
       var fromColor = getStopColor(fromTemp, i);
       var toColor = getStopColor(toTemp, i);
-      
+
       animateStyleProperty(stops[i], 'stop-color', fromColor, toColor, 2000, function(from, to, progress) {
         var color = interpolateColor(from, to, progress);
         return color.toRGBString();
       });
     }
   };
-  /*
-  var lolTemp = 25.0;
-  setInterval(function() {
-    console.log(lolTemp);
-    updateCurrentTemp(lolTemp);
-    lolTemp += 2.0;
-  }, 5000);
-  */
+  
   var options = {
     showLine: true,
     axisX: {
       labelInterpolationFnc: function(value, index) {
-        return index % 10 === 0 ? getLabel(value) : null;
+        return index % 10 === 0 ? formatTimeLabel(value) : null;
       }
     },
     axisY: {
       offset: 60,
       labelInterpolationFnc: function(value, index) {
-        return formatTemp(value);
+        return formatTempLabel(value);
       }
     }
   };
 
-  var getLabel = function(value) {
-    return value.getHours() + ':' + (Math.floor(value.getMinutes() / 10) * 10); 
+  var formatTimeLabel = function(value) {
+    return moment(value).format('LT'); 
   }
 
+  function formatTempLabel(value) {
+    return value.toFixed(1) + '&nbsp;&deg;C';
+  }
+  
   var responsiveOptions = [
     /*
     ['screen and (min-width: 640px)', {
@@ -150,36 +263,41 @@ $(function() {
   var chart = null;
 
   setInterval(function () {
-    animate = false;
-    refresh();
+    chartAnimate = false;
+    refreshData();
   }, 30000);
 
-  // First draw
-  refresh();
+  // First render
+  refreshData();
 
-  function refresh() {
+  function refreshData() {
+    $.get(endpointUrl, { 'gte[timestamp]': timeWindow }, function(samples) {
+      if (samples instanceof Array && samples.length >= 4) {
+        //samples = samples.filter(function(value, index) {return index % 4 === 0;});
+        samples = samples.map(function(sample) {
+          return convertSample(sample);
+        });
+        samples.reverse();
+        
+        var inSamples = samples.filter(function(sample) {return sample.id === inTempSensorId});
+        var outSamples = samples.filter(function(sample) {return sample.id === outTempSensorId});
+        
+        inSamples = inSamples.filter(function(sample, index) {return index % 2 === 0;});
+        outSamples = outSamples.filter(function(sample, index) {return index % 2 === 0;});
+        
+        console.log('in n ',inSamples.length);
+        console.log('out n ',inSamples.length);
+        
+        updateCurrentTemp(inSamples);
+        updateCurrentEstimate(inSamples, outSamples);
 
-    $.get(endpointUrl, { 'gte[timestamp]': timeWindow }, function(measurements) {
-      console.log(measurements);
-
-      if (measurements instanceof Array && measurements.length >= 4) {
-        measurements = measurements.filter(function(value, index) {return index % 4 === 0;});
-        measurements.reverse();
-
-        data.labels = measurements.map(function(current) {
-          return toLocalDate(current.timestamp);
+        data.labels = inSamples.map(function(sample) {
+          return sample.time;
         });
 
-        var previousTemp = parseFloat(measurements[0].temp);
         data.series = [];
-        data.series.push(measurements.map(function(current) {
-          var temp = parseFloat(current.temp);
-          var delta = temp - previousTemp;
-
-          // Dampen the temperature change, since the sensor data has the tendency to jitter
-          return previousTemp + 0.2 * delta;
-          //return Math.round((previousTemp + 0.2 * delta) * 100) / 100;
-        }));
+        data.series.push(dampenTemps(inSamples));
+        data.series.push(dampenTemps(outSamples));
 
         if (chart == null) {
           initChart();
@@ -193,16 +311,35 @@ $(function() {
     });
   }
 
-  function formatTemp(value) {
-    // Dampen the temperature change, since the sensor data has the tendency to jitter
-    return value + '&nbsp;&deg;C';
-    //return (Math.round(value * 10) / 10) + '&nbsp;&deg;C';
+  var convertSample = function(sample) {
+    return {
+      id: trimSensorId(sample.id),
+      time: new Date(sample.timestamp).getTime(),
+      temp: parseFloat(sample.temp)
+    };
   }
+  
+  var dampenTemps = function(samples) {
+    console.log(samples[0].temp);
+    var previousTemp = samples[0].temp;
+    
+    return samples.map(function(sample) {
+      var delta = sample.temp - previousTemp;
 
-  function toLocalDate (timestamp) {
-    var inDate = new Date(timestamp);
+      // Dampen the temperature change, since the sensor data has the tendency to jitter
+      return previousTemp + 0.2 * delta;
+    });
+  }
+  
+  // Once we don't have extra parenthesis around the id, this will not be needed anymore
+  var trimSensorId = function(id) {
+    return id.substring(1, id.length - 1);
+  }
+  
+  var toLocalDate = function(milliseconds) {
+    var inDate = new Date(milliseconds);
     var localDate = new Date();
-    localDate.setTime(inDate.valueOf() + 60000 * inDate.getTimezoneOffset());
+    localDate.setTime(inDate.getTime() + 60 * 1000 * localDate.getTimezoneOffset());
     return localDate;
   }
 
@@ -253,32 +390,6 @@ $(function() {
             dur: durations,
             from: data.x - 100,
             to: data.x,
-            easing: 'easeOutQuart'
-          }
-        });
-
-        seq++;
-      } else if (chartAnimate && data.type === 'point') {
-        data.element.animate({
-          x1: {
-            begin: seq * delays,
-            dur: durations,
-            from: data.x - 10,
-            to: data.x,
-            easing: 'easeOutQuart'
-          },
-          x2: {
-            begin: seq * delays,
-            dur: durations,
-            from: data.x - 10,
-            to: data.x,
-            easing: 'easeOutQuart'
-          },
-          opacity: {
-            begin: seq * delays,
-            dur: durations,
-            from: 0,
-            to: 1,
             easing: 'easeOutQuart'
           }
         });

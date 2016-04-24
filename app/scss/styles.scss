@@ -1,7 +1,5 @@
 @import "_fonts";
 
-
-
 body {
   background-color: #1ba6be;
   color: white;
@@ -9,7 +7,7 @@ body {
   text-align: center;
 }
 
-.container {
+.dashboard {
   display: flex;
   width: 100%;
 }
@@ -107,7 +105,7 @@ body {
   padding: 20px;
 }
 
-.ct-series-a {
+.ct-series-a, .ct-series-b {
   .ct-point, .ct-line, .ct-bar, .ct-slice-donut {
     stroke: url(#gradient) !important;
   }

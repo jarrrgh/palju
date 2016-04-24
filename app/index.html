@@ -14,6 +14,7 @@
     
     <script src="https://cdn.jsdelivr.net/chartist.js/latest/chartist.min.js"></script>
     <script src="https://cdn.jsdelivr.net/jquery/3.0.0-beta1/jquery.min.js"></script>
+    <script src="js/moment-with-locales.min.js"></script>
     <!--<script src="js/Chart.Core.min.js"></script>
     <script src="js/Chart.Scatter.min.js"></script>-->
     
@@ -24,10 +25,19 @@
   <body>
     <h1>Welcome to the Internet of Paljus!</h1>
     
-    <div class="container">
+    <div class="dashboard">
       <div class="chart">
-        <div class="ct-chart ct-minor-seventh"></div>
-      </div>
+      <div class="ct-chart ct-minor-seventh"></div>
+      <svg>
+        <defs>
+          <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%"/>
+            <stop offset="50%"/>
+            <stop offset="100%"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
       
       <div class="displays">
         <div class="rim">
@@ -35,8 +45,10 @@
             <div class="emboss">
               <div class="dent">
                 <div class="content">
-                    23<span>.9</span><strong>o</strong>
-                    <div class="label">L&auml;mp&ouml;tila</div>
+                    <div id="temperature">
+                      --
+                    </div>
+                    <div id="temperature-label" class="label">L&auml;mp&ouml;tila</div>
                 </div>
               </div>
             </div>
@@ -48,8 +60,10 @@
             <div class="emboss">
               <div class="dent">
                 <div class="content">
-                  1.5<span>h</span>
-                  <div class="label">Odottelua</div>
+                  <div id="estimate">
+                    --
+                  </div>
+                  <div id="estimate-label" class="label">Kylpyvalmis</div>
                 </div>
               </div>
             </div>
@@ -58,20 +72,5 @@
       </div>
     </div>
     
-    <svg>
-      <defs>
-        <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-          <!--<stop offset="0%" stop-color="#df3341"/>-->
-          <!--
-          <stop id="stopLeft" offset="0%" stop-color="#fe9804"/>
-          <stop id="stopMiddle" offset="50%" stop-color="#d4f355"/>
-          <stop  id="stopRight" offset="100%" stop-color="#35cbe5"/>-->
-          
-          <stop id="s1" offset="0%"/>
-          <stop id="s2" offset="50%"/>
-          <stop id="s3" offset="100%"/>
-        </linearGradient>
-      </defs>
-    </svg>
   </body>
 </html>

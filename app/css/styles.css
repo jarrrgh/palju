@@ -18,7 +18,7 @@ body {
   font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
   text-align: center; }
 
-.container {
+.dashboard {
   display: -webkit-box;
   display: -webkit-flex;
   display: -ms-flexbox;
@@ -115,10 +115,10 @@ body {
   width: 100%;
   padding: 20px; }
 
-.ct-series-a .ct-point, .ct-series-a .ct-line, .ct-series-a .ct-bar, .ct-series-a .ct-slice-donut {
+.ct-series-a .ct-point, .ct-series-a .ct-line, .ct-series-a .ct-bar, .ct-series-a .ct-slice-donut, .ct-series-b .ct-point, .ct-series-b .ct-line, .ct-series-b .ct-bar, .ct-series-b .ct-slice-donut {
   stroke: url(#gradient) !important; }
 
-.ct-series-a .ct-slice-pie, .ct-series-a .ct-area {
+.ct-series-a .ct-slice-pie, .ct-series-a .ct-area, .ct-series-b .ct-slice-pie, .ct-series-b .ct-area {
   fill: url(#gradient) !important; }
 
 .ct-label {
