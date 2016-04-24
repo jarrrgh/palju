@@ -13,16 +13,16 @@ $(function() {
   Object.freeze(Color);
   
   var spectrum = [
-    {offset: 0, color: new Color(53, 203, 229)}, // #35cbe5 25.5 °C
-    {offset: 0.5, color: new Color(64, 203, 156)}, // #40cb9c 33 °C
+    {offset: 0, color: new Color(53, 203, 229)}, // #35cbe5 30 °C
+    {offset: 0.5, color: new Color(64, 203, 156)}, // #40cb9c 35 °C
     {offset: 0.7, color: new Color(124, 202, 87)}, // #7cca57 36 °C
-    {offset: 0.8, color: new Color(212, 243, 85)}, // #d4f355 37.5 °C
-    {offset: 0.9, color: new Color(254, 152, 4)}, // #fe9804 39 °C
-    {offset: 1, color: new Color(223, 51, 65)} // #df3341 40.5 °C
+    {offset: 0.8, color: new Color(212, 243, 85)}, // #d4f355 37 °C
+    {offset: 0.9, color: new Color(254, 152, 4)}, // #fe9804 38 °C
+    {offset: 1, color: new Color(223, 51, 65)} // #df3341 39 °C
   ];
 
-  var minColorTemp = 25.5; // °C
-  var maxColorTemp = 40.5; // °C
+  var minColorTemp = 30; // °C
+  var maxColorTemp = 39; // °C
 
   var currentTemp;
   var optimalTemp = 36.5; // °C
@@ -115,19 +115,16 @@ $(function() {
     
     if (inSamples.length >= sampleCountForEstimate) {
       // Note we flip the x-axis and y-axis for linear regression
-      var xSamples = inSamples.map(function(sample) { console.log('sample.time',sample.time); return sample.temp;});
+      var xSamples = inSamples.map(function(sample) { return sample.temp;});
       var ySamples = inSamples.map(function(sample) { return sample.time / 1000 / 60;});
 
       var lineResult = linearRegression(xSamples, ySamples);
       var estimateMs = lineResult.fn(optimalTemp);
 
-      console.log('estimateMs', estimateMs);
       estimateMin = estimateMs - (Date.now() / 1000 / 60);
     } else {
       estimateMin = maxEsimate;
     }
-    
-    console.log('time estimate in min ' + estimateMin)
     
     timeElement.innerHTML = formatTimeEstimateHtml(estimateMin);
   }
@@ -216,16 +213,12 @@ $(function() {
       toColors.push(getStopColor(toTemp, i));
     }
     
-    console.log('fromColors', fromColors);
-    console.log('toColors', toColors);
-    
     animateStyleProperty(display, 'background', fromColors, toColors, 2000, function(from, to, progress) {
       var colors = []
       for (var i = 0; i < 3; i++) {
         var color = interpolateColor(from[i], to[i], progress);
         colors.push(color.toRGBString());
       }
-      console.log('progress',progress);
       return 'linear-gradient(to left, ' + colors[0] + ' 0%, ' + colors[1] + ' 50%, ' + colors[2] + ' 100%)';
     });
   };
@@ -236,12 +229,14 @@ $(function() {
     var temps = samples.map(function(sample) {return sample.temp});
     var lowestTemp = temps.min();
     var highestTemp = temps.max();
-    var midTemp = (lowestTemp + highestTemp) / 2;
     
     var stops = gradientElement.getElementsByTagName('stop');
-    stops[0].style.setProperty('stop-color', getStopColor(highestTemp, 0).toRGBString());
-    stops[1].style.setProperty('stop-color', getStopColor(midTemp, 0).toRGBString());
-    stops[2].style.setProperty('stop-color', getStopColor(lowestTemp, 0).toRGBString());
+    var tempStep = (highestTemp - lowestTemp) / stops.length;
+    
+    for (var i = 0; i < stops.length; i++) {
+      var temp = highestTemp - i * tempStep;
+      stops[i].style.setProperty('stop-color', getStopColor(temp, 1).toRGBString());
+    }
   };
   
   var options = {
@@ -320,8 +315,9 @@ $(function() {
         });
 
         data.series = [];
-        data.series.push(dampenTemps(inSamples));
-        data.series.push(dampenTemps(outSamples));
+        data.series.push(inSamples.map(function(sample) {
+          return sample.temp;
+        }));
 
         if (chart == null) {
           initChart();
@@ -341,18 +337,6 @@ $(function() {
       time: new Date(sample.timestamp).getTime(),
       temp: parseFloat(sample.temp)
     };
-  }
-  
-  var dampenTemps = function(samples) {
-    console.log(samples[0].temp);
-    var previousTemp = samples[0].temp;
-    
-    return samples.map(function(sample) {
-      var delta = sample.temp - previousTemp;
-
-      // Dampen the temperature change, since the sensor data has the tendency to jitter
-      return previousTemp + 0.2 * delta;
-    });
   }
   
   // Once we don't have extra parenthesis around the id, this will not be needed anymore
