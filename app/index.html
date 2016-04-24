@@ -27,12 +27,7 @@
     
     <div class="dashboard">
       
-      <div class="chart">
-        <div class="ct-chart ct-minor-seventh"></div>
-      </div>
-      
       <div class="displays">
-        
         <div id="temperature-display" class="display">
           <div class="emboss">
             <div class="dent">
@@ -61,20 +56,23 @@
         
       </div>
       
+      <div class="chart">
+        <svg id="gradient-defs-svg">
+          <defs>
+            <linearGradient id="line-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%"/>
+              <stop offset="20%"/>
+              <stop offset="40%"/>
+              <stop offset="60%"/>
+              <stop offset="80%"/>
+              <stop offset="100%"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="ct-chart ct-perfect-fourth"></div>
+      </div>
+      
     </div>
-    
-    <svg>
-      <defs>
-        <linearGradient id="line-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%"/>
-          <stop offset="20%"/>
-          <stop offset="40%"/>
-          <stop offset="60%"/>
-          <stop offset="80%"/>
-          <stop offset="100%"/>
-        </linearGradient>
-      </defs>
-    </svg>
     
   </body>
 </html>

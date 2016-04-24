@@ -251,7 +251,7 @@ $(function() {
   var options = {
     showLine: true,
     axisX: {
-      offset: 60,
+      offset: 30,
       labelInterpolationFnc: function(value, index, labels) {
         return formatTimeLabel(value, index, labels);
       }
@@ -283,24 +283,6 @@ $(function() {
   function formatTempLabel(value) {
     return value.toFixed(1) + '&nbsp;&deg;C';
   }
-  
-  var responsiveOptions = [
-    /*
-    ['screen and (min-width: 640px)', {
-      axisX: {
-        labelInterpolationFnc: function(value, index) {
-          return index % 10 === 0 ? getLabel(value) : null;
-        }
-      },
-      axisY: {
-        offset: 100,
-        labelInterpolationFnc: function(value, index) {
-          return value + '&nbsp;&deg;C';
-        }
-      }
-    }]
-    */
-  ];
 
   var data = {};
   var chart = null;
@@ -372,7 +354,7 @@ $(function() {
   var durations = 500;
 
   var initChart = function() {
-    chart = new Chartist.Line('.ct-chart', data, options, responsiveOptions);
+    chart = new Chartist.Line('.ct-chart', data, options);
 
     // Once the chart is fully created we reset the sequence
     chart.on('created', function() {
