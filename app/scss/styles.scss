@@ -93,6 +93,10 @@ body {
 }
 
 .ct-series-a, .ct-series-b {
+  .ct-line {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
   .ct-point, .ct-line, .ct-bar, .ct-slice-donut {
     stroke: url(#line-gradient) !important;
   }
