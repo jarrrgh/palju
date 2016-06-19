@@ -32,11 +32,14 @@ $(function() {
   var maxEsimate = 7 * 60; // min
   var currentEstimate;
   
-  var sampleCountForAvg = 3;
-  var sampleCountForEstimate = 3;
+  var sampleCountForAvg = 1;
+  var minSampleCountForEstimate = 3;
   
-  var inTempSensorId = "0000068a3594";
-  var outTempSensorId = "0000066eff45";
+  //var inTempSensorId = "0000068a3594";
+  //var outTempSensorId = "0000066eff45";
+  
+  var inTempSensorId = "0000067745db"; // Tub water temp
+  var outTempSensorId = "0000067769ea"; // Heated water temp
   
   var timeWindow = 'now -2 hour';
   var endpointUrl = 'https://data.sparkfun.com/output/OG62ZDJ65VC3x9jmWbK0.json';
@@ -116,7 +119,7 @@ $(function() {
     var timeElement = document.getElementById('estimate-value');
     var estimateMin;
     
-    if (inSamples.length >= sampleCountForEstimate) {
+    if (inSamples.length >= minSampleCountForEstimate) {
       // Note we flip the x-axis and y-axis for linear regression
       var xSamples = inSamples.map(function(sample) { return sample.temp;});
       var ySamples = inSamples.map(function(sample) { return sample.time / 1000 / 60;});
@@ -124,6 +127,10 @@ $(function() {
       var lineResult = linearRegression(xSamples, ySamples);
       var estimateMs = lineResult.fn(optimalTemp);
 
+      console.log('slope', lineResult['slope']);
+      console.log('intercept', lineResult['intercept']);
+      console.log('r2', lineResult['r2']);
+      
       estimateMin = estimateMs - (Date.now() / 1000 / 60);
     }
     
@@ -159,9 +166,12 @@ $(function() {
   }
   
   var formatTemperatureHtml = function(temp) {
+    console.log("temperature " + temp);
+    
     if (temp) {
-      var integer = parseInt(temp); // Get the integer part as is
-      var decimal = Math.round(temp % 1 * 10); // Round decimal part to the nearest one digit
+      var rounded = Math.round(temp * 10) / 10;
+      var integer = parseInt(rounded); // Get integer part
+      var decimal = parseInt(rounded % 1 * 10); // Get decimal part
 
       return integer+'<span>.'+decimal+'</span><strong>&deg;</strong>';
     } else {
@@ -170,17 +180,15 @@ $(function() {
   }
   
   var formatTimeEstimateHtml = function(minutes) {
-    console.log ('minutes', minutes);
+    console.log("time estimate in minutes " + minutes);
     // TODO: move messages 'Paljuun!', 'Pökkyä!' ja 'Poppaa!' to another place
     if (currentTemp > 35.5) {
-      return  'Nyt!'
+      return  'Paljuun!'
     } else if (minutes) {
-      console.log ('minutes2', minutes);
       if (minutes > 60) {
-        var hours = Math.min(minutes, maxEsimate) / 60.0;
-        
-        var integer = parseInt(hours); // Get the integer part as is
-        var decimal = Math.round(hours % 1 * 10); // Round decimal part to the nearest one digit
+        var hours = Math.round(Math.min(minutes, maxEsimate) / 60 * 10) / 10;
+        var integer = parseInt(hours); // Get integer part
+        var decimal = parseInt(hours % 1 * 10); // Get decimal part
 
         if (minutes > maxEsimate) {
           return  '>' + integer + '<span>h</span>'
@@ -191,7 +199,7 @@ $(function() {
       } else {
         return '--';
       }
-    } else if (minutes > 5) {
+    } else {
       return  '--';
     }
   }
@@ -459,4 +467,8 @@ $(function() {
     
     return defaultValue;
   };
+  
+  function isNumeric(n) {
+    return !isNaN(parseFloat(n)) && isFinite(n);
+  }
 });
