@@ -323,6 +323,9 @@ $(function() {
 
         data.series = [];
         data.series.push(inSamples.map(function(sample) {return sample.temp;}));
+        
+        // Visualize also heating temps
+        data.series.push(outSamples.map(function(sample) {return sample.temp;}));
 
         if (!chart) {
           initChart();
