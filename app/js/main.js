@@ -34,6 +34,7 @@ $(function() {
   
   var sampleCountForAvg = 1;
   var minSampleCountForEstimate = 3;
+  var timeWindowForEstimate = 30 * 60 * 1000; // ms
   
   //var inTempSensorId = "0000068a3594";
   //var outTempSensorId = "0000066eff45";
@@ -120,9 +121,13 @@ $(function() {
     var estimateMin;
     
     if (inSamples.length >= minSampleCountForEstimate) {
-      // Note we flip the x-axis and y-axis for linear regression
-      var xSamples = inSamples.map(function(sample) { return sample.temp;});
-      var ySamples = inSamples.map(function(sample) { return sample.time / 1000 / 60;});
+      // Filter out samples, which are older than timeWindowForEstimate
+      var minTime = inSamples[inSamples.length - 1].time - timeWindowForEstimate;
+      var estimateSamples = inSamples.filter(function(sample) {return sample.time >= minTime});
+      
+      // Prepare samples for linear regression. Note, that we flip the x-axis and y-axis.
+      var xSamples = estimateSamples.map(function(sample) { return sample.temp;});
+      var ySamples = estimateSamples.map(function(sample) { return sample.time / 1000 / 60;});
 
       var lineResult = linearRegression(xSamples, ySamples);
       var estimateMs = lineResult.fn(optimalTemp);
@@ -313,8 +318,12 @@ $(function() {
         var inSamples = samples.filter(function(sample) {return sample.id === inTempSensorId});
         var outSamples = samples.filter(function(sample) {return sample.id === outTempSensorId});
         
+        // Drop every other sample
         inSamples = inSamples.filter(function(sample, index) {return index % 2 === 0;});
         outSamples = outSamples.filter(function(sample, index) {return index % 2 === 0;});
+        
+        // Replace data with generated data set
+        // inSamples = generateData(inTempSensorId, 20, 36, 2 * 60 * 60 * 1000, 30 * 1000);
         
         updateCurrentTemp(inSamples);
         updateCurrentEstimate(inSamples, outSamples);
@@ -471,7 +480,21 @@ $(function() {
     return defaultValue;
   };
   
-  function isNumeric(n) {
+  var isNumeric = function(n) {
     return !isNaN(parseFloat(n)) && isFinite(n);
+  }
+  
+  // Generates data set for testing
+  var generateData = function(id, minTemp, maxTemp, timeSpan, interval) {
+    var sampleCount = timeSpan / interval;
+    var tempStep = (maxTemp - minTemp) / sampleCount;
+    var time = Date.now() - timeSpan;
+    var samples = [];
+    
+    for (i = 0; i < sampleCount; i++) {
+      samples.push({"temp":minTemp + i * tempStep, "id": id, "time":(time + i * interval)});
+    }
+    
+    return samples;
   }
 });
