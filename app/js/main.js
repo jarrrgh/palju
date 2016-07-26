@@ -8,9 +8,22 @@ $(function() {
   Color.prototype.toRGBString = function () {
       return 'rgb('+this.r+','+this.g+','+this.b+')';
   };
+  
+  Color.prototype.toRGBAString = function (a) {
+      return 'rgba('+this.r+','+this.g+','+this.b+','+a+')';
+  };
 
   // Color is immutable
   Object.freeze(Color);
+  
+  //var inTempSensorId = "0000068a3594";
+  //var outTempSensorId = "0000066eff45";
+  
+  var inTempSensorId = "0000067745db"; // Tub water temp
+  var outTempSensorId = "0000067769ea"; // Heated water temp
+  
+  var timeWindowParam = 'now -2 hour';
+  var endpointUrl = 'https://data.sparkfun.com/output/OG62ZDJ65VC3x9jmWbK0.json';
   
   var defaultColor = new Color(27, 166, 190);
   
@@ -25,26 +38,23 @@ $(function() {
 
   var minColorTemp = 30; // °C
   var maxColorTemp = 39; // °C
-
-  var currentTemp;
   var optimalTemp = 36.5; // °C
   
-  var maxEsimate = 7 * 60; // min
+  var currentTemp;
   var currentEstimate;
+  var currentInSlope = 0;
+  var currentOutSlope = 0;
   
+  var maxEsimate = 7 * 60; // min
   var sampleCountForAvg = 1;
-  var minSampleCountForEstimate = 3;
-  var timeWindowForEstimate = 30 * 60 * 1000; // ms
+  var minSampleCountForEstimates = 3;
+  var timeWindowForInEstimates = 30 * 60 * 1000; // ms
+  var timeWindowForOutEstimates = 10 * 60 * 1000; // ms
   
-  //var inTempSensorId = "0000068a3594";
-  //var outTempSensorId = "0000066eff45";
+  // Update display values
+  var displayUpdateInterval = 4000; // ms
+  var displayAlertInterval = 2000; // ms
   
-  var inTempSensorId = "0000067745db"; // Tub water temp
-  var outTempSensorId = "0000067769ea"; // Heated water temp
-  
-  var timeWindow = 'now -2 hour';
-  var endpointUrl = 'https://data.sparkfun.com/output/OG62ZDJ65VC3x9jmWbK0.json';
-
   var chartAnimate = true; // For one time animations
 
   var lerp = function(a, b, u) {
@@ -60,7 +70,7 @@ $(function() {
   };
 
   var animateStyleProperty = function(element, property, from, to, duration, callback) {
-    var interval = 10;
+    var interval = 40;
     var steps = duration/interval;
     var step = 1.0/steps;
     var progress = 0.0;
@@ -71,7 +81,85 @@ $(function() {
       progress += step;
     }, interval);
   };
-
+  
+  var showAlertOverlay = false;
+  
+  var startAlertToggling = function() {
+    if(showAlertOverlay) {
+      return;
+    }
+    showAlertOverlay = true;
+    
+    var estimateDisplay = document.getElementById('estimate-display');
+    var estimateAlert = estimateDisplay.children[0];
+    
+    console.log(estimateDisplay);
+    console.log(estimateAlert);
+    
+    var toAlpha = 0;
+    
+    var pulsateAlertOverlay = setInterval(function() {
+      toAlpha = 1 - toAlpha; // Switch between 0 and 1
+      
+      if (!showAlertOverlay) {
+        clearInterval(pulsateAlertOverlay);
+      }
+      
+      animateStyleProperty(estimateAlert, 'background-color', 1 - toAlpha, toAlpha, displayAlertInterval, function(from, to, progress) {
+        return pickSpectrumHue(1).toRGBAString(Math.abs(progress - from));
+      });
+      
+    }, displayAlertInterval);
+  };
+  
+  var stopAlertToggling = function() {
+    showAlertOverlay = false;
+  };
+  
+  var startDisplayUpdates = function() {
+    var tempElement = document.getElementById('temperature-value');
+    var timeElement = document.getElementById('estimate-value');
+    var timeLabel = document.getElementById('estimate-label');
+    
+    var showClock = false;
+    var showMessage = false;
+    
+    var updateDisplays = setInterval(function() {
+      var estimateHtml = '--';
+      var labelOpacity = 0;
+      
+      if (currentOutSlope >= 0) {
+        stopAlertToggling();
+      }
+      
+      if (currentTemp >= 38) {
+        estimateHtml = '<span>Poppaa!<span>';
+        startAlertToggling();
+      } else if (currentTemp >= 36) {
+        estimateHtml = '<span>Paljuun!<span>';
+        stopAlertToggling();
+      } else {
+        if (currentOutSlope < 0 && showMessage) {
+          estimateHtml = '<span>P&ouml;kky&auml;!<span>'
+          startAlertToggling();
+        } else {
+          labelOpacity = 1;
+          if (showClock) {
+            estimateHtml = formatClockEstimateHtml(currentEstimate);
+          } else {
+            estimateHtml = formatTimeEstimateHtml(currentEstimate); 
+          }
+          showClock = !showClock;
+        } 
+      }
+      
+      showMessage = !showMessage
+      tempElement.innerHTML = formatTemperatureHtml(currentTemp);
+      timeElement.innerHTML = estimateHtml;
+      timeLabel.style.opacity = labelOpacity;
+    }, displayUpdateInterval);
+  }
+  
   var getStopColor = function(temp, stopIndex) {
     var tempPosition = (temp - minColorTemp) / (maxColorTemp - minColorTemp) - (stopIndex * 0.2);
     return pickSpectrumHue(tempPosition);
@@ -98,7 +186,6 @@ $(function() {
   };
   
   var updateCurrentTemp = function(samples) {
-    var tempElement = document.getElementById('temperature-value');
     var avgTemp;
     
     if (samples.length >= sampleCountForAvg) {
@@ -109,37 +196,43 @@ $(function() {
         updateTemperatureDisplayGradient(currentTemp, avgTemp);
         updateEstimateDisplayGradient(currentTemp, avgTemp);
         updateChartLineGradient(samples);
-        currentTemp = avgTemp;  
+        currentTemp = avgTemp;
       }
     }
-    
-    tempElement.innerHTML = formatTemperatureHtml(avgTemp);
   }
   
   var updateCurrentEstimate = function(inSamples, outSamples) {
-    var timeElement = document.getElementById('estimate-value');
-    var estimateMin;
-    
-    if (inSamples.length >= minSampleCountForEstimate) {
-      // Filter out samples, which are older than timeWindowForEstimate
-      var minTime = inSamples[inSamples.length - 1].time - timeWindowForEstimate;
-      var estimateSamples = inSamples.filter(function(sample) {return sample.time >= minTime});
+    if (inSamples.length >= minSampleCountForEstimates) {
+      var lineResult = linearRegressionForSamples(inSamples, timeWindowForInEstimates);
       
-      // Prepare samples for linear regression. Note, that we flip the x-axis and y-axis.
-      var xSamples = estimateSamples.map(function(sample) { return sample.temp;});
-      var ySamples = estimateSamples.map(function(sample) { return sample.time / 1000 / 60;});
-
-      var lineResult = linearRegression(xSamples, ySamples);
-      var estimateMs = lineResult.fn(optimalTemp);
-
-      console.log('slope', lineResult['slope']);
-      console.log('intercept', lineResult['intercept']);
-      console.log('r2', lineResult['r2']);
+      currentEstimate = lineResult.fn(optimalTemp);
+      currentInSlope = lineResult['slope'];
       
-      estimateMin = estimateMs - (Date.now() / 1000 / 60);
+      console.log('in slope', lineResult['slope']);
+      console.log('in intercept', lineResult['intercept']);
+      console.log('in r2', lineResult['r2']);
     }
     
-    timeElement.innerHTML = formatTimeEstimateHtml(estimateMin);
+    if (outSamples.length >= minSampleCountForEstimates) {
+      var lineResult = linearRegressionForSamples(outSamples, timeWindowForOutEstimates);
+      currentOutSlope = lineResult['slope'];
+      
+      console.log('out slope', lineResult['slope']);
+      console.log('out intercept', lineResult['intercept']);
+      console.log('out r2', lineResult['r2']);
+    }
+  }
+  
+  var linearRegressionForSamples = function(samples, timeWindow) {
+    // Filter out samples, which are older than timeWindowForEstimate
+    var minTime = samples[samples.length - 1].time - timeWindow;
+    var estimateSamples = samples.filter(function(sample) {return sample.time >= minTime});
+    
+    // Prepare samples for linear regression. Note, that we flip the x-axis and y-axis.
+    var xSamples = samples.map(function(sample) { return sample.temp;});
+    var ySamples = samples.map(function(sample) { return sample.time / 1000 / 60;});
+
+    return linearRegression(xSamples, ySamples);
   }
   
   // http://trentrichardson.com/2010/04/06/compute-linear-regressions-in-javascript/
@@ -171,8 +264,6 @@ $(function() {
   }
   
   var formatTemperatureHtml = function(temp) {
-    console.log("temperature " + temp);
-    
     if (temp) {
       var rounded = Math.round(temp * 10) / 10;
       var integer = parseInt(rounded); // Get integer part
@@ -184,12 +275,10 @@ $(function() {
     }
   }
   
-  var formatTimeEstimateHtml = function(minutes) {
-    console.log("time estimate in minutes " + minutes);
-    // TODO: move messages 'Paljuun!', 'Pökkyä!' ja 'Poppaa!' to another place
-    if (currentTemp > 35.5) {
-      return  'Paljuun!'
-    } else if (minutes) {
+  var formatTimeEstimateHtml = function(estimateMs) {
+    if (estimateMs) {
+      var minutes = estimateMs - (Date.now() / 1000 / 60);
+      
       if (minutes > 60) {
         var hours = Math.round(Math.min(minutes, maxEsimate) / 60 * 10) / 10;
         var integer = parseInt(hours); // Get integer part
@@ -207,6 +296,13 @@ $(function() {
     } else {
       return  '--';
     }
+  }
+  
+  var formatClockEstimateHtml = function(estimateMs) {
+    if (estimateMs) {
+      return '<span style="font-size: 80%">' + moment(estimateMs).format("HH:mm") + '</span>';
+    }
+    return '--';
   }
   
   var updateTemperatureDisplayGradient = function(fromTemp, toTemp) {
@@ -300,16 +396,18 @@ $(function() {
   var data = {};
   var chart = null;
 
+  // Start updates
+  startDisplayUpdates();
+  
   setInterval(function () {
     chartAnimate = false;
     refreshData();
   }, 30000);
 
-  // First render
   refreshData();
 
   function refreshData() {
-    $.get(endpointUrl, { 'gte[timestamp]': timeWindow }, function(samples) {
+    $.get(endpointUrl, { 'gte[timestamp]': timeWindowParam }, function(samples) {
       if (samples instanceof Array && samples.length >= 4) {
         //samples = samples.filter(function(value, index) {return index % 4 === 0;});
         samples = samples.map(function(sample) {return convertSample(sample);});
@@ -323,7 +421,8 @@ $(function() {
         outSamples = outSamples.filter(function(sample, index) {return index % 2 === 0;});
         
         // Replace data with generated data set
-        // inSamples = generateData(inTempSensorId, 20, 36, 2 * 60 * 60 * 1000, 30 * 1000);
+        inSamples = generateData(inTempSensorId, 20, 39, 2 * 60 * 60 * 1000, 30 * 1000);
+        outSamples = generateData(inTempSensorId, 36, 34, 2 * 60 * 60 * 1000, 30 * 1000);
         
         updateCurrentTemp(inSamples);
         updateCurrentEstimate(inSamples, outSamples);
