@@ -388,18 +388,35 @@ $(function() {
 
   var formatTimeLabel = function(value, index, labels) {
     var current = moment(value);
+    var label = null;
+    
     if (index > 0) {
       var previous = moment(labels[index - 1]);
-
-      if (previous.hours() < current.hours()) {
-        return moment(current.hours() + '00', "hmm").format("HH:mm");
+      var first = moment(labels[0]);
+      var last = moment(labels[labels.length - 1]);
+      
+      if (last.diff(first, 'minutes') < 50) {
+        // Short time window. Show label for second value and median
+        var medianIndex = parseInt(labels.length / 2);
+        return index === 1 || index === medianIndex ? current.format('HH:mm') : null;
+      } else if (previous.hours() < current.hours()) {
+        // Hour passed
+        label = moment(current.hours() + '00', "hmm").format("HH:mm");
       } else if (previous.minutes() < 30 && current.minutes() >= 30) {
-        return moment(current.hours() + '30', "hmm").format("HH:mm");
+        // Half an hour passed
+        label = moment(current.hours() + '30', "hmm").format("HH:mm");
       } else if (previous.date() != current.date()) {
-        return current.format('dddd');
+        // Full day passed
+        label = current.format('ddd');
+      }
+      
+      if (last.diff(current, 'minutes') < 20) {
+        // Do not show label for last less than 30 minutes
+        return null;
       }
     }
-    return null;
+    
+    return label;
   }
 
   function formatTempLabel(value) {
@@ -434,8 +451,8 @@ $(function() {
         outSamples = outSamples.filter(function(sample, index) {return index % 2 === 0;});
         
         // Replace data with generated data set
-        inSamples = generateData(inTempSensorId, 30, 39, 2 * 60 * 60 * 1000, 30 * 1000);
-        outSamples = generateData(inTempSensorId, 36, 34, 2 * 60 * 60 * 1000, 30 * 1000);
+        //inSamples = generateData(inTempSensorId, 30, 39, 50 * 60 * 1000, 30 * 1000);
+        //outSamples = generateData(inTempSensorId, 36, 34, 50 * 60 * 1000, 30 * 1000);
         
         updateCurrentTemp(inSamples);
         updateCurrentEstimate(inSamples, outSamples);
@@ -604,7 +621,7 @@ $(function() {
     var samples = [];
     
     for (i = 0; i < sampleCount; i++) {
-      samples.push({"temp":minTemp + i * tempStep, "id": id, "time":(time + i * interval)});
+      samples.push({"temp": minTemp + i * tempStep, "id": id, "time": (time + i * interval)});
     }
     
     return samples;
