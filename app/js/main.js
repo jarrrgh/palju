@@ -353,7 +353,7 @@ $(function() {
     
     for (var i = 0; i < stops.length; i++) {
       var temp = highestTemp - i * tempStep;
-      stops[i].style.setProperty('stop-color', getStopColor(temp, 1).toRGBString());
+      stops[i].style.setProperty('stop-color', getStopColor(temp, 0).toRGBString());
     }
   };
   
@@ -421,7 +421,7 @@ $(function() {
         outSamples = outSamples.filter(function(sample, index) {return index % 2 === 0;});
         
         // Replace data with generated data set
-        inSamples = generateData(inTempSensorId, 20, 39, 2 * 60 * 60 * 1000, 30 * 1000);
+        inSamples = generateData(inTempSensorId, 30, 39, 2 * 60 * 60 * 1000, 30 * 1000);
         outSamples = generateData(inTempSensorId, 36, 34, 2 * 60 * 60 * 1000, 30 * 1000);
         
         updateCurrentTemp(inSamples);
