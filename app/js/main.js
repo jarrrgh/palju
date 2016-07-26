@@ -70,16 +70,29 @@ $(function() {
   };
 
   var animateStyleProperty = function(element, property, from, to, duration, callback) {
-    var interval = 40;
-    var steps = duration/interval;
-    var step = 1.0/steps;
+    var start = null;
+    var previousUpdate = null;
     var progress = 0.0;
     
-    var animationInterval = setInterval(function() {
-      if (progress >= 1.0){ clearInterval(animationInterval) }
+    var animationUpdate = function(timestamp) {
+      if (!start) start = timestamp;
+      if (!previousUpdate) previousUpdate = timestamp;
+      
+      var delta = timestamp - previousUpdate;
+      var elapsed = timestamp - start;
+      var progress = Math.min(elapsed / duration, 1.0);
+      
+      if (progress < 1.0) window.requestAnimationFrame(animationUpdate);
+      
+      if (delta < 40) {
+        return;
+      }
+      
+      previousUpdate = timestamp;
       element.style.setProperty(property, callback(from, to, progress));
-      progress += step;
-    }, interval);
+    };
+    
+    window.requestAnimationFrame(animationUpdate);
   };
   
   var showAlertOverlay = false;
