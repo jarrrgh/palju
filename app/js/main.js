@@ -136,41 +136,45 @@ $(function() {
     
     var updateDisplays = setInterval(function() {
       var estimateHtml = '--';
-      var labelOpacity = 0;
+      var showLabel = false;
       
-      if (currentOutSlope >= 0) {
-        stopAlertToggling();
-      }
+      var hotEnough = currentTemp && currentTemp >= 36;
+      var tooHot = currentTemp && currentTemp >= 38;
+      var coolingDown = currentOutSlope && currentOutSlope <= 0;
       
-      if (currentTemp >= 38) {
+      if (tooHot) {
         estimateHtml = '<span>Poppaa!<span>';
-        startAlertToggling();
-      } else if (currentTemp >= 36) {
+      } else if (hotEnough) {
         estimateHtml = '<span>Paljuun!<span>';
-        stopAlertToggling();
       } else {
-        if (currentOutSlope < 0 && showMessage) {
+        // Toggle between message and time estimates
+        if (coolingDown && showMessage) {
           estimateHtml = '<span>P&ouml;kky&auml;!<span>'
-          startAlertToggling();
         } else {
-          labelOpacity = 1;
           if (currentEstimate) {
             var minutes = (currentEstimate - Date.now()) / 1000 / 60;
             
-            if (showClock && minutes < maxEstimate) {
+            if (showClock && minutes > 0 && minutes < maxEstimate) {
               estimateHtml = formatClockEstimateHtml(currentEstimate);
             } else {
               estimateHtml = formatTimeEstimateHtml(minutes); 
             }
           }
+          showLabel = true;
           showClock = !showClock;
         } 
+      }
+      
+      if (tooHot || !hotEnough && coolingDown) {
+        startAlertToggling();
+      } else {
+        stopAlertToggling();
       }
       
       showMessage = !showMessage
       tempElement.innerHTML = formatTemperatureHtml(currentTemp);
       timeElement.innerHTML = estimateHtml;
-      timeLabel.style.opacity = labelOpacity;
+      timeLabel.style.opacity = showLabel ? 1 : 0;
     }, displayUpdateInterval);
   }
   
@@ -301,14 +305,14 @@ $(function() {
       }
       return integer + '.' + decimal + '<span>h</span>'
     } else if (minutes > 0) {
-      return  parseInt(minutes) + '<span>min</span>'
+      return parseInt(minutes) + '<span>min</span>'
     }
     return '--';
   }
   
   var formatClockEstimateHtml = function(estimateMs) {
     if (estimateMs) {
-      return '<span style="font-size: 80%">' + moment(estimateMs).format('hh:mm') + '</span>';
+      return '<span style="font-size: 80%">' + moment(estimateMs).format('HH:mm') + '</span>';
     }
     return '--';
   }
@@ -393,13 +397,13 @@ $(function() {
       if (last.diff(first, 'minutes') < 50) {
         // Short time window. Show label for second value and median
         var medianIndex = parseInt(labels.length / 2);
-        return index === 1 || index === medianIndex ? current.format('hh:mm') : null;
+        return index === 1 || index === medianIndex ? current.format('HH:mm') : null;
       } else if (previous.hours() < current.hours()) {
         // Hour passed
-        label = moment(current.hours() + '00', "hmm").format("hh:mm");
+        label = moment(current.hours() + '00', "hmm").format("HH:mm");
       } else if (previous.minutes() < 30 && current.minutes() >= 30) {
         // Half an hour passed
-        label = moment(current.hours() + '30', "hmm").format("hh:mm");
+        label = moment(current.hours() + '30', "hmm").format("HH:mm");
       } else if (previous.date() != current.date()) {
         // Full day passed
         label = current.format('ddd');
@@ -446,8 +450,8 @@ $(function() {
         outSamples = outSamples.filter(function(sample, index) {return index % 2 === 0;});
         
         // Replace data with generated data set
-        //inSamples = generateData(inTempSensorId, 20, 33, 120 * 60 * 1000, 30 * 1000);
-        //outSamples = generateData(inTempSensorId, 21, 34, 120 * 60 * 1000, 30 * 1000);
+        //inSamples = generateData(inTempSensorId, 30, 35, 120 * 60 * 1000, 30 * 1000);
+        //outSamples = generateData(inTempSensorId, 32, 31.9, 120 * 60 * 1000, 30 * 1000);
         
         updateCurrentTemp(inSamples);
         updateCurrentEstimate(inSamples, outSamples);
