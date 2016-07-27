@@ -45,7 +45,7 @@ $(function() {
   var currentInSlope = 0;
   var currentOutSlope = 0;
   
-  var maxEsimate = 7 * 60; // min
+  var maxEstimate = 7 * 60; // min
   var sampleCountForAvg = 1;
   var minSampleCountForEstimates = 3;
   var timeWindowForInEstimates = 30 * 60 * 1000; // ms
@@ -106,9 +106,6 @@ $(function() {
     var estimateDisplay = document.getElementById('estimate-display');
     var estimateAlert = estimateDisplay.children[0];
     
-    console.log(estimateDisplay);
-    console.log(estimateAlert);
-    
     var toAlpha = 0;
     
     var pulsateAlertOverlay = setInterval(function() {
@@ -157,10 +154,14 @@ $(function() {
           startAlertToggling();
         } else {
           labelOpacity = 1;
-          if (showClock) {
-            estimateHtml = formatClockEstimateHtml(currentEstimate);
-          } else {
-            estimateHtml = formatTimeEstimateHtml(currentEstimate); 
+          if (currentEstimate) {
+            var minutes = (currentEstimate - Date.now()) / 1000 / 60;
+            
+            if (showClock && minutes < maxEstimate) {
+              estimateHtml = formatClockEstimateHtml(currentEstimate);
+            } else {
+              estimateHtml = formatTimeEstimateHtml(minutes); 
+            }
           }
           showClock = !showClock;
         } 
@@ -218,21 +219,22 @@ $(function() {
     if (inSamples.length >= minSampleCountForEstimates) {
       var lineResult = linearRegressionForSamples(inSamples, timeWindowForInEstimates);
       
-      currentEstimate = lineResult.fn(optimalTemp);
+      currentEstimate = parseInt(lineResult.fn(optimalTemp));
       currentInSlope = lineResult['slope'];
       
-      console.log('in slope', lineResult['slope']);
-      console.log('in intercept', lineResult['intercept']);
-      console.log('in r2', lineResult['r2']);
+      console.log('estimate', currentEstimate);
+      console.log('in slope', currentInSlope);
+      //console.log('in intercept', lineResult['intercept']);
+      //console.log('in r2', lineResult['r2']);
     }
     
     if (outSamples.length >= minSampleCountForEstimates) {
       var lineResult = linearRegressionForSamples(outSamples, timeWindowForOutEstimates);
       currentOutSlope = lineResult['slope'];
       
-      console.log('out slope', lineResult['slope']);
-      console.log('out intercept', lineResult['intercept']);
-      console.log('out r2', lineResult['r2']);
+      console.log('out slope', currentOutSlope);
+      //console.log('out intercept', lineResult['intercept']);
+      //console.log('out r2', lineResult['r2']);
     }
   }
   
@@ -243,7 +245,7 @@ $(function() {
     
     // Prepare samples for linear regression. Note, that we flip the x-axis and y-axis.
     var xSamples = samples.map(function(sample) { return sample.temp;});
-    var ySamples = samples.map(function(sample) { return sample.time / 1000 / 60;});
+    var ySamples = samples.map(function(sample) { return sample.time;});
 
     return linearRegression(xSamples, ySamples);
   }
@@ -264,8 +266,8 @@ $(function() {
         sum_xy += (x[i] * y[i]);
         sum_xx += (x[i] * x[i]);
         sum_yy += (y[i] * y[i]);
-    } 
-
+    }
+    
     lr['slope'] = (n * sum_xy - sum_x * sum_y) / (n * sum_xx - sum_x * sum_x);
     lr['intercept'] = (sum_y - lr.slope * sum_x)/n;
     lr['r2'] = Math.pow((n * sum_xy - sum_x * sum_y) /
@@ -288,32 +290,25 @@ $(function() {
     }
   }
   
-  var formatTimeEstimateHtml = function(estimateMs) {
-    if (estimateMs) {
-      var minutes = estimateMs - (Date.now() / 1000 / 60);
-      
-      if (minutes > 60) {
-        var hours = Math.round(Math.min(minutes, maxEsimate) / 60 * 10) / 10;
-        var integer = parseInt(hours); // Get integer part
-        var decimal = parseInt(hours % 1 * 10); // Get decimal part
+  var formatTimeEstimateHtml = function(minutes) {
+    if (minutes > 60) {
+      var hours = Math.round(Math.min(minutes, maxEstimate) / 60 * 10) / 10;
+      var integer = parseInt(hours); // Get integer part
+      var decimal = parseInt(hours % 1 * 10); // Get decimal part
 
-        if (minutes > maxEsimate) {
-          return  '>' + integer + '<span>h</span>'
-        }
-        return integer + '.' + decimal + '<span>h</span>'
-      } else if (minutes > 0) {
-        return  parseInt(minutes) + '<span>min</span>'
-      } else {
-        return '--';
+      if (minutes > maxEstimate) {
+        return  '>' + integer + '<span>h</span>'
       }
-    } else {
-      return  '--';
+      return integer + '.' + decimal + '<span>h</span>'
+    } else if (minutes > 0) {
+      return  parseInt(minutes) + '<span>min</span>'
     }
+    return '--';
   }
   
   var formatClockEstimateHtml = function(estimateMs) {
     if (estimateMs) {
-      return '<span style="font-size: 80%">' + moment(estimateMs).format("HH:mm") + '</span>';
+      return '<span style="font-size: 80%">' + moment(estimateMs).format('hh:mm') + '</span>';
     }
     return '--';
   }
@@ -398,13 +393,13 @@ $(function() {
       if (last.diff(first, 'minutes') < 50) {
         // Short time window. Show label for second value and median
         var medianIndex = parseInt(labels.length / 2);
-        return index === 1 || index === medianIndex ? current.format('HH:mm') : null;
+        return index === 1 || index === medianIndex ? current.format('hh:mm') : null;
       } else if (previous.hours() < current.hours()) {
         // Hour passed
-        label = moment(current.hours() + '00', "hmm").format("HH:mm");
+        label = moment(current.hours() + '00', "hmm").format("hh:mm");
       } else if (previous.minutes() < 30 && current.minutes() >= 30) {
         // Half an hour passed
-        label = moment(current.hours() + '30', "hmm").format("HH:mm");
+        label = moment(current.hours() + '30', "hmm").format("hh:mm");
       } else if (previous.date() != current.date()) {
         // Full day passed
         label = current.format('ddd');
@@ -451,8 +446,8 @@ $(function() {
         outSamples = outSamples.filter(function(sample, index) {return index % 2 === 0;});
         
         // Replace data with generated data set
-        //inSamples = generateData(inTempSensorId, 30, 39, 50 * 60 * 1000, 30 * 1000);
-        //outSamples = generateData(inTempSensorId, 36, 34, 50 * 60 * 1000, 30 * 1000);
+        //inSamples = generateData(inTempSensorId, 20, 33, 120 * 60 * 1000, 30 * 1000);
+        //outSamples = generateData(inTempSensorId, 21, 34, 120 * 60 * 1000, 30 * 1000);
         
         updateCurrentTemp(inSamples);
         updateCurrentEstimate(inSamples, outSamples);
