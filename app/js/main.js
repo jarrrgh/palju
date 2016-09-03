@@ -16,11 +16,11 @@ $(function() {
   // Color is immutable
   Object.freeze(Color);
   
-  //var inTempSensorId = "0000068a3594";
-  //var outTempSensorId = "0000066eff45";
+  var inTempSensorId = "0000068a3594"; // Tub water temp
+  var outTempSensorId = "0000066eff45"; // Heated water temp
   
-  var inTempSensorId = "0000067745db"; // Tub water temp
-  var outTempSensorId = "0000067769ea"; // Heated water temp
+  //var inTempSensorId = "0000067745db"; // Test values
+  //var outTempSensorId = "0000067769ea"; // Test values
   
   var timeWindowParam = 'now -2 hour';
   var endpointUrl = 'https://data.sparkfun.com/output/OG62ZDJ65VC3x9jmWbK0.json';
