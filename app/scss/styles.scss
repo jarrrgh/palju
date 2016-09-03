@@ -9,6 +9,23 @@ body {
   padding: 0;
 }
 
+#warning {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  line-height: 2em;
+  background-color: rgba(0,0,0,0.5);
+  
+  img {
+    margin-right: 5px;
+    display: inline;
+    vertical-align: middle;
+    height: 2em;
+  }
+}
+
 .dashboard {
   display: flex;
   width: 100%;
