@@ -16,6 +16,8 @@ $(function() {
   // Color is immutable
   Object.freeze(Color);
   
+  var debug = getUrlParameter('debug') ? true : false;
+  
   var inTempSensorId = "0000068a3594"; // Tub water temp
   var outTempSensorId = "0000066eff45"; // Heated water temp
   
@@ -226,19 +228,23 @@ $(function() {
       currentEstimate = parseInt(lineResult.fn(optimalTemp));
       currentInSlope = lineResult['slope'];
       
-      console.log('estimate', currentEstimate);
-      console.log('in slope', currentInSlope);
-      //console.log('in intercept', lineResult['intercept']);
-      //console.log('in r2', lineResult['r2']);
+      if (debug) {
+        console.log('estimate', currentEstimate);
+        console.log('in slope', currentInSlope);
+        //console.log('in intercept', lineResult['intercept']);
+        //console.log('in r2', lineResult['r2']);
+      }
     }
     
     if (outSamples.length >= minSampleCountForEstimates) {
       var lineResult = linearRegressionForSamples(outSamples, timeWindowForOutEstimates);
       currentOutSlope = lineResult['slope'];
       
-      console.log('out slope', currentOutSlope);
-      //console.log('out intercept', lineResult['intercept']);
-      //console.log('out r2', lineResult['r2']);
+      if (debug) {
+        console.log('out slope', currentOutSlope);
+        //console.log('out intercept', lineResult['intercept']);
+        //console.log('out r2', lineResult['r2']);
+      }
     }
   }
   
@@ -461,8 +467,10 @@ $(function() {
         data.series = [];
         data.series.push(inSamples.map(function(sample) {return sample.temp;}));
         
-        // Visualize also heating temps
-        data.series.push(outSamples.map(function(sample) {return sample.temp;}));
+        if (debug) {
+          // Visualize also heating temps
+          data.series.push(outSamples.map(function(sample) {return sample.temp;}));
+        }
 
         if (!chart) {
           initChart();
@@ -472,7 +480,9 @@ $(function() {
         }
       }
     }).fail(function() {
-      console.error("Referesh failed.");
+      if (debug) {
+        console.error("Referesh failed.");
+      }
     });
   }
 
@@ -626,3 +636,18 @@ $(function() {
     return samples;
   }
 });
+
+var getUrlParameter = function(sParam) {
+  var sPageURL = decodeURIComponent(window.location.search.substring(1));
+  var sURLVariables = sPageURL.split('&');
+  var sParameterName;
+  var i;
+
+  for (i = 0; i < sURLVariables.length; i++) {
+      sParameterName = sURLVariables[i].split('=');
+
+      if (sParameterName[0] === sParam) {
+          return sParameterName[1] === undefined ? true : sParameterName[1];
+      }
+  }
+};
