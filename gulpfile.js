@@ -70,6 +70,12 @@ gulp.task('fonts', function() {
     .pipe(gulp.dest('dist/fonts'))
 })
 
+// Copy favicon 
+gulp.task('favicon', function() {
+  return gulp.src('app/favicon.ico')
+    .pipe(gulp.dest('dist'))
+})
+
 // Clean caches
 gulp.task('clean:cache', function (callback) {
 return cache.clearAll(callback)
@@ -93,7 +99,7 @@ gulp.task('default', function(callback) {
 gulp.task('build', function(callback) {
   runSequence(
     'clean:dist',
-    ['sass', 'useref', 'images', 'fonts'],
+    ['sass', 'useref', 'images', 'fonts', 'favicon'],
     callback
   )
 })
