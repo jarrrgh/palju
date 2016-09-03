@@ -34,6 +34,14 @@ body {
     vertical-align: middle;
     height: 2em; }
 
+#contact {
+  text-align: left;
+  padding: 2em;
+  background-size: contain;
+  background-image: url("http://paljubileet.fi/img/palm-gray-small.png");
+  background-repeat: no-repeat;
+  background-position: left; }
+
 .dashboard {
   display: -webkit-box;
   display: -webkit-flex;
