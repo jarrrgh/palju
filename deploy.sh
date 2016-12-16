@@ -4,8 +4,11 @@ set -e # exit with nonzero exit code if anything fails
 REPO=`git config remote.origin.url`
 SSH_REPO=${REPO/https:\/\/github.com\//git@github.com:}
 
-# run compile script
+# Run compile script
 NODE_ENV=production gulp build
+
+# Copy cname config
+cp CNAME dist/
 
 # Get the deploy key by using Travis's stored variables to decrypt github_deploy_key.enc
 openssl aes-256-cbc \
@@ -17,7 +20,7 @@ chmod 600 github_deploy_key
 eval `ssh-agent -s`
 ssh-add github_deploy_key
 
-# go to the out directory and create a *new* Git repo
+# Go to the out directory and create a *new* Git repo
 cd dist
 git init
 
