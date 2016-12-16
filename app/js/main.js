@@ -357,8 +357,8 @@ var linearRegressionForSamples = function(samples, timeWindow) {
   var estimateSamples = samples.filter(function(sample) {return sample.time >= minTime});
 
   // Prepare samples for linear regression. Note, that we flip the x-axis and y-axis.
-  var xSamples = samples.map(function(sample) { return sample.temp;});
-  var ySamples = samples.map(function(sample) { return sample.time;});
+  var xSamples = estimateSamples.map(function(sample) { return sample.temp;});
+  var ySamples = estimateSamples.map(function(sample) { return sample.time;});
 
   return linearRegression(xSamples, ySamples);
 }
