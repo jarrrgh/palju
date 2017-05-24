@@ -537,7 +537,7 @@ var formatTimeLabel = function(value, index, labels) {
 }
 
 function formatTempLabel(value) {
-  return value.toFixed(1) + '&nbsp;&deg;C';
+  return value.toFixed(1) + ' °C';
 }
 
 var data = {};
