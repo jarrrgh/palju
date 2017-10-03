@@ -543,19 +543,38 @@ function formatTempLabel(value) {
 var data = {};
 var chart = null;
 
+var apikey = '9083bd96-0ab1-4714-812d-95472edefdee';
+var twoDays = 2 * 60 * 60 * 1000;
+
 var fetchData = function() {
+  var now = new Date();
+  var end = now.toISOString();
+  var start = new Date(now.getTime() - twoDays).toISOString();
   $.ajax({
-    url: 'http://data.sparkfun.com/output/' + publicKey + '.json',
-    jsonp: 'callback',
+    url: '/api/' + inTempSensorId + '/series?apikey=' + apikey + '&start=' + start + '&end=' + end,
     cache: true,
-    dataType: 'jsonp',
-    data: { 'gte[timestamp]': timeWindowParam },
     success: function(response) {
-      handleResponse(response);
+      var inSamples = response;
+      $.ajax({
+        url: '/api/' + outTempSensorId + '/series?apikey=' + apikey + '&start=' + start + '&end=' + end,
+        cache: true,
+        success: function(response) {
+          var outSamples = response;
+          handleResponse(inSamples.concat(outSamples));
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+          if (debug) {
+            console.error("Refresh failed: " + textStatus);
+          }
+          if (XMLHttpRequest.readyState == 0) {
+            showWarning('Yhteysongelma!', true);
+          }
+        }
+      });
     },
     error: function(jqXHR, textStatus, errorThrown) {
       if (debug) {
-        console.error("Referesh failed: " + textStatus);
+        console.error("Refresh failed: " + textStatus);
       }
       
       if (XMLHttpRequest.readyState == 0) {
@@ -628,9 +647,9 @@ var isDataOutdated = function(samples) {
 
 var convertSample = function(sample) {
   return {
-    id: trimSensorId(sample.id),
-    time: new Date(sample.timestamp).getTime(),
-    temp: parseFloat(sample.temp)
+    id: sample.serial,
+    time: new Date(sample.measurement_time).getTime(),
+    temp: sample.value
   };
 }
 

@@ -11,6 +11,7 @@ var sourcemaps = require('gulp-sourcemaps');
 var browserSync = require('browser-sync');
 var runSequence = require('run-sequence');
 var del         = require('del');
+var gulpUtil = require('gulp-util');
 
 var production = process.env.NODE_ENV === 'production';
 
@@ -19,9 +20,8 @@ var production = process.env.NODE_ENV === 'production';
 // Start browserSync server
 gulp.task('browserSync', function() {
   browserSync({
-    server: {
-      baseDir: 'app'
-    }
+    proxy: "localhost:8000",
+    serveStatic: ['.', './app']
   })
 })
 
@@ -49,7 +49,7 @@ gulp.task('watch', function() {
 gulp.task('useref', function() {
   return gulp.src('app/*.html')
     .pipe(useref())
-    .pipe(gulpIf('*.js', uglify()))
+    .pipe(gulpIf('*.js', uglify().on('error', gulpUtil.log)))
     .pipe(gulpIf('*.css', cssnano()))
     .pipe(gulp.dest('dist'));
 });
