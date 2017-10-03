@@ -37,6 +37,7 @@
     "run-sequence": "^1.1.5"
   },
   "dependencies": {
-    "chartist": "^0.9.7"
+    "chartist": "^0.9.7",
+    "gulp-util": "^3.0.8"
   }
 }
