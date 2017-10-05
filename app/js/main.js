@@ -598,7 +598,6 @@ var handleResponse = function(samples) {
 var refreshValues = function(samples) {
   //samples = samples.filter(function(value, index) {return index % 4 === 0;});
   samples = samples.map(function(sample) {return convertSample(sample);});
-  samples.reverse();
   
   if (isDataOutdated(samples)) {
     showWarning('Viimeisin lämpötilamittaus yli 5 minuuttia vanha.');
