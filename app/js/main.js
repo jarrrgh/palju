@@ -395,7 +395,7 @@ var formatTemperatureHtml = function(temp) {
   if (temp) {
     var rounded = Math.round(temp * 10) / 10;
     var integer = parseInt(rounded); // Get integer part
-    var decimal = parseInt(rounded % 1 * 10); // Get decimal part
+    var decimal = Math.abs(parseInt(rounded % 1 * 10)); // Get decimal part
 
     return integer+'<span>.'+decimal+'</span><strong>&deg;</strong>';
   } else {
