@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="description" content="Palju IoT playground">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Internet of Palju!</title>
+    
+    <link rel="stylesheet" href="css/styles.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/chartist.js/latest/chartist.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/jquery/3.0.0-beta1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/momentjs/2.13.0/moment-with-locales.min.js"></script>
+    <!--<script src="js/Chart.Core.min.js"></script>
+    <script src="js/Chart.Scatter.min.js"></script>-->
+    
+    <script src="js/main.min.js"></script>
+  </head>
+  <body>
+    <div class="dashboard">
+      
+      <div class="displays">
+        <div id="temperature-display" class="display">
+          <div class="alert">
+            <div class="emboss">
+              <div class="dent">
+                <div class="content">
+                    <div id="temperature-value">
+                      --
+                    </div>
+                    <div id="temperature-label" class="label">L&auml;mp&ouml;tila</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div id="estimate-display" class="display">
+          <div class="alert">
+            <div class="emboss">
+              <div class="dent">
+                <div class="content">
+                  <div id="estimate-value">
+                    --
+                  </div>
+                  <div id="estimate-label" class="label">Kylpyvalmis</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+      
+      <div class="chart">
+        <svg id="gradient-defs-svg">
+          <defs>
+            <linearGradient id="line-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%"/>
+              <stop offset="20%"/>
+              <stop offset="40%"/>
+              <stop offset="60%"/>
+              <stop offset="80%"/>
+              <stop offset="100%"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="ct-chart ct-perfect-fourth"></div>
+      </div>
+      
+    </div>
+    
+    <section id="contact">
+      <h3 class="title-contact">Paljubileet</h3>
+      <p>
+        Tmi Tuomo Hakaoja<br>
+        050 520 8983<br>
+        Tampere<br>
+      </p>
+    </section>
+    
+    <div id="warning"><img src="images/warning-icon.png"><span>-</span></div>
+    
+  </body>
+</html>
