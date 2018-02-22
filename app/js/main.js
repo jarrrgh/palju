@@ -407,7 +407,7 @@ var formatTimeEstimateHtml = function(minutes) {
   if (minutes > 60) {
     var hours = Math.round(Math.min(minutes, maxEstimate) / 60 * 10) / 10;
     var integer = parseInt(hours); // Get integer part
-    var decimal = parseInt(hours % 1 * 10); // Get decimal part
+    var decimal = Math.abs(parseInt(hours % 1 * 10)); // Get decimal part
 
     if (minutes > maxEstimate) {
       return  '>' + integer + '<span>h</span>'
