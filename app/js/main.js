@@ -17,11 +17,9 @@ Object.freeze(Color);
 
 var debug = false;
 
-var inTempSensorId = "0000068a3594"; // Tub water temp
+var inTempSensorId = "0000067745db"; // Tub water temp
 var outTempSensorId = "0000066eff45"; // Heated water temp
-
-//var inTempSensorId = "0000067745db"; // Test values
-//var outTempSensorId = "0000067769ea"; // Test values
+var outsideTempSensorId = "0000068a3594"; // Outside temp
 
 var timeWindowParam = 'now -2 hour';
 var endpoint = 'https://data.sparkfun.com/output/';
@@ -43,6 +41,7 @@ var maxColorTemp = 39; // °C
 var optimalTemp = 36.5; // °C
 
 var currentTemp;
+var currentOutsideTemp;
 var currentEstimate;
 var currentInSlope = 0;
 var currentOutSlope = 0;
@@ -232,6 +231,7 @@ var stopAlertToggling = function() {
 };
 
 var startDisplayUpdates = function() {
+  var outsideTempElement = document.getElementById('outside-temperature-value');
   var tempElement = document.getElementById('temperature-value');
   var timeElement = document.getElementById('estimate-value');
   var timeLabel = document.getElementById('estimate-label');
@@ -280,6 +280,8 @@ var startDisplayUpdates = function() {
     tempElement.innerHTML = formatTemperatureHtml(currentTemp);
     timeElement.innerHTML = estimateHtml;
     timeLabel.style.opacity = showLabel ? 1 : 0;
+
+    outsideTempElement.innerHTML = isNaN(currentOutsideTemp) ? '--' : `${currentOutsideTemp}&deg;C`;
   }, displayUpdateInterval);
 }
 
@@ -560,7 +562,22 @@ var fetchData = function() {
         cache: true,
         success: function(response) {
           var outSamples = response;
-          handleResponse(inSamples.concat(outSamples));
+          $.ajax({
+            url: '/api/' + outsideTempSensorId + '/series?apikey=' + apikey + '&start=' + start + '&end=' + end,
+            cache: true,
+            success: function(response) {
+              var outsideSamples = response;
+              handleResponse(inSamples.concat(outSamples), outsideSamples);
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+              if (debug) {
+                console.error("Refresh failed: " + textStatus);
+              }
+              if (XMLHttpRequest.readyState == 0) {
+                showWarning('Yhteysongelma!', true);
+              }
+            }
+          });
         },
         error: function(jqXHR, textStatus, errorThrown) {
           if (debug) {
@@ -584,7 +601,7 @@ var fetchData = function() {
   });
 }
 
-var handleResponse = function(samples) {
+var handleResponse = function(samples, outsideSamples) {
   if (samples instanceof Array && samples.length >= 4) {
     refreshValues(samples);
   } else {
@@ -592,6 +609,11 @@ var handleResponse = function(samples) {
       console.log('Not enough data for calculations.');
     }
     hideWarning(true);
+  }
+
+  if (outsideSamples instanceof Array && outsideSamples.length > 0) {
+    let outsideTemp = outsideSamples[outsideSamples.length - 1].value;
+    currentOutsideTemp = outsideTemp.toFixed(1);
   }
 }
 
